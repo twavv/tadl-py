@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "tadl"
+version = "0.1.0"
+description = ""
+authors = ["Travis DePrato <hey@twavv.me>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+strawberry-graphql = "^0.227.2"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+pytest = "^8.2.0"
+pytest-asyncio = "^0.23.6"
+mypy = "^1.10.0"
+watchfiles = "^0.21.0"
+sqlalchemy = "^2.0.29"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
