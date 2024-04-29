@@ -1,10 +1,10 @@
-from typing import Generic, Callable, Awaitable, TypeVar, reveal_type
+from typing import Generic, Callable, Awaitable, TypeVar
 
 import strawberry.dataloader
 
+from tadl.match import group_array
 from tadl.query_interface import QueryInterface
 from tadl.types import TKey, TElt, Scalar
-from tadl.match import match_array, group_array
 
 
 class QueryInstanceGroupLoader(QueryInterface[TElt], Generic[TKey, TElt]):
