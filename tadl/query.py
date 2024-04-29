@@ -1,28 +1,32 @@
 from __future__ import annotations
 
-from typing import ParamSpec, Callable, Awaitable, cast, Generic, TypeVar
+from typing import ParamSpec, Callable, Awaitable, cast, Generic, Concatenate
 
-from tadl.query_batch import QueryInstanceBatchLoader
 from tadl.descriptor import LazyInitDescriptor
+from tadl.query_batch import QueryInstanceBatchLoader
 from tadl.query_group import QueryInstanceGroupLoader
 from tadl.query_interface import QueryInterface
-from tadl.types import TElt, TSelf, TKey
+from tadl.types import TElt, TSelf, TKey, Scalar
 
-TArg = TypeVar("TArg")
+TParamSpec = ParamSpec("TParamSpec")
 # NOTE:
 # Using `TSelf` here are an argument doesn't actually provide much (any?) type
 # safety, but it's still useful as a form of documentation.
-TQueryMethod = Callable[[TSelf, TArg], Awaitable[list[TElt]]]
-TQueryFn = Callable[[TArg], Awaitable[list[TElt]]]
+TQueryMethod = Callable[Concatenate[TSelf, TParamSpec], Awaitable[list[TElt]]]
 
 TLoadMethod = Callable[[TSelf, list[TKey]], Awaitable[list[TElt]]]
 
 
-def query(fn: TQueryMethod[TSelf, TArg, TElt]) -> Query[TArg, TElt]:
+def query(fn: TQueryMethod[TSelf, TParamSpec, TElt]) -> Query[TParamSpec, TElt]:
+    """
+    A decorator that transforms a method into a ``Query`` object.
+
+    The given function must be an async instance method.
+    """
     return Query(fn)
 
 
-class Query(Generic[TArg, TElt]):
+class Query(Generic[TParamSpec, TElt]):
     """
     A Query is a wrapper around a data-loading function and several interfaces
     that can be used to load data in different ways.
@@ -32,14 +36,14 @@ class Query(Generic[TArg, TElt]):
     interfaces to the query.
     """
 
-    def __init__(self, query_fn: TQueryMethod[TSelf, TArg, TElt]) -> None:
+    def __init__(self, query_fn: TQueryMethod[TSelf, TParamSpec, TElt]) -> None:
         self.__query_fn = query_fn
         self.__interfaces: list[LazyInitDescriptor[QueryInterface[TElt]]] = []
 
     def __set_name__(self, owner: type, name: str) -> None:
         self.__name = name
 
-    def __get__(self, instance: TSelf, owner: type) -> QueryInstance[TSelf, TArg, TElt]:
+    def __get__(self, instance: TSelf, owner: type) -> QueryInstance[TSelf, TParamSpec, TElt]:
         if instance is None:
             raise ValueError(
                 "QueryLoaderDescriptor must be accessed through an instance."
@@ -47,7 +51,7 @@ class Query(Generic[TArg, TElt]):
         if not hasattr(instance, "__query_loader__"):
             setattr(instance, "__query_loader__", {})  # type: ignore[misc]
         loader_map = cast(
-            dict[str, QueryInstance[TSelf, TArg, TElt]],
+            dict[str, QueryInstance[TSelf, TParamSpec, TElt]],
             instance.__query_loader__,  # type: ignore[attr-defined]
         )
         if self.__name not in loader_map:
@@ -90,7 +94,7 @@ class Query(Generic[TArg, TElt]):
         self,
         *,
         key: Callable[[TElt], TKey],
-        sort: Callable[[TElt], int],
+        sort: Callable[[TElt], Scalar],
     ) -> Callable[
         [TLoadMethod[TSelf, TKey, TElt]],
         LazyInitDescriptor[QueryInstanceGroupLoader[TKey, TElt]],
@@ -115,22 +119,22 @@ class Query(Generic[TArg, TElt]):
         return decorator
 
 
-class QueryInstance(Generic[TSelf, TArg, TElt]):
+class QueryInstance(Generic[TSelf, TParamSpec, TElt]):
     def __init__(
         self,
         instance: TSelf,
-        query_fn: TQueryMethod[TSelf, TArg, TElt],
+        query_fn: TQueryMethod[TSelf, TParamSpec, TElt],
         interfaces: list[QueryInterface[TElt]],
     ) -> None:
         self.__instance = instance
         self.__query_fn = query_fn
         self.__interfaces = interfaces
 
-    async def query(self, arg: TArg) -> list[TElt]:
-        elts = await self.__query_fn(self.__instance, arg)
+    async def query(self, *args: TParamSpec.args, **kwargs: TParamSpec.kwargs) -> list[TElt]:
+        elts = await self.__query_fn(self.__instance, *args, **kwargs)
         for interface in self.__interfaces:
             interface.prime_many(elts)
         return elts
 
-    async def __call__(self, arg: TArg) -> list[TElt]:
-        return await self.query(arg)
+    async def __call__(self, *args: TParamSpec.args, **kwargs: TParamSpec.kwargs) -> list[TElt]:
+        return await self.query(*args, **kwargs)
