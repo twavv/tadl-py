@@ -65,4 +65,3 @@ class BatchLoader(Generic[TKey, TElt]):
 
     async def load_many(self, keys: list[TKey]) -> list[TElt]:
         return await self.__dl.load_many(keys)
-
