@@ -43,7 +43,9 @@ class Query(Generic[TParamSpec, TElt]):
     def __set_name__(self, owner: type, name: str) -> None:
         self.__name = name
 
-    def __get__(self, instance: TSelf, owner: type) -> QueryInstance[TSelf, TParamSpec, TElt]:
+    def __get__(
+        self, instance: TSelf, owner: type
+    ) -> QueryInstance[TSelf, TParamSpec, TElt]:
         if instance is None:
             raise ValueError(
                 "QueryLoaderDescriptor must be accessed through an instance."
@@ -130,11 +132,15 @@ class QueryInstance(Generic[TSelf, TParamSpec, TElt]):
         self.__query_fn = query_fn
         self.__interfaces = interfaces
 
-    async def query(self, *args: TParamSpec.args, **kwargs: TParamSpec.kwargs) -> list[TElt]:
+    async def query(
+        self, *args: TParamSpec.args, **kwargs: TParamSpec.kwargs
+    ) -> list[TElt]:
         elts = await self.__query_fn(self.__instance, *args, **kwargs)
         for interface in self.__interfaces:
             interface.prime_many(elts)
         return elts
 
-    async def __call__(self, *args: TParamSpec.args, **kwargs: TParamSpec.kwargs) -> list[TElt]:
+    async def __call__(
+        self, *args: TParamSpec.args, **kwargs: TParamSpec.kwargs
+    ) -> list[TElt]:
         return await self.query(*args, **kwargs)
