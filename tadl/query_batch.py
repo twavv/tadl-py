@@ -28,7 +28,7 @@ class QueryInstanceBatchLoader(QueryInterface[TElt], Generic[TKey, TElt]):
         elts = await self.__load_fn(keys)
         return match_array(keys, elts, key=self.__key_fn)
 
-    async def __call__(self, key: TKey) -> Awaitable[TElt | None]:
+    async def __call__(self, key: TKey) -> TElt | None:
         """
         Load a single element by key.
 
