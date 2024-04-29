@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tadl"
-version = "0.1.1"
+version = "0.1.2"
 description = ""
 authors = ["Travis DePrato <hey@twavv.me>"]
 readme = "README.md"
