@@ -2,9 +2,9 @@ from typing import Generic, Callable, Awaitable, TypeVar
 
 import strawberry.dataloader
 
+from tadl.match import match_array
 from tadl.query_interface import QueryInterface
 from tadl.types import TKey, TElt
-from tadl.match import match_array
 
 
 class QueryInstanceBatchLoader(QueryInterface[TElt], Generic[TKey, TElt]):
